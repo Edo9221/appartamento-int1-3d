@@ -165,9 +165,9 @@
     <div class="legend-item"><div class="swatch" style="background:#a8d4a8"></div><span class="name">Stanza 1</span><span class="area">22 m²</span></div>
     <div class="legend-item"><div class="swatch" style="background:#d4a8c0"></div><span class="name">Stanza 2</span><span class="area">22 m²</span></div>
     <div class="legend-item"><div class="swatch" style="background:#d4b896"></div><span class="name">Stanza 3</span><span class="area">16 m²</span></div>
-    <div class="legend-item"><div class="swatch" style="background:#bda287"></div><span class="name">Sala</span><span class="area">10 m²</span></div>
-    <div class="legend-item"><div class="swatch" style="background:#7fa9b8"></div><span class="name">Bagno</span><span class="area">5 m²</span></div>
-    <div class="legend-item"><div class="swatch" style="background:#96b8c2"></div><span class="name">Bagno 2</span><span class="area">7 m²</span></div>
+    <div class="legend-item"><div class="swatch" style="background:#bda287"></div><span class="name">Sala</span><span class="area">16 m²</span></div>
+    <div class="legend-item"><div class="swatch" style="background:#7fa9b8"></div><span class="name">Bagno</span><span class="area">3.5 m²</span></div>
+    <div class="legend-item"><div class="swatch" style="background:#96b8c2"></div><span class="name">Bagno 2</span><span class="area">3.5 m²</span></div>
   </div>
 </div>
 
@@ -188,9 +188,9 @@ const ROOMS = [
   { id: 'cam1',  name: 'Stanza 1',  sub: '22 m²', x1: 0,    z1: 0,   x2: 5.5,  z2: 4,   color: 0xa8d4a8 },
   { id: 'cam2',  name: 'Stanza 2',  sub: '22 m²', x1: 5.5,  z1: 0,   x2: 11,   z2: 4,   color: 0xd4a8c0 },
   { id: 'sogg',  name: 'Stanza 3',  sub: '16 m²', x1: 0,    z1: 4,   x2: 4.5,  z2: 7.5, color: 0xd4b896 },
-  { id: 'sala',  name: 'Sala',      sub: '10 m²', x1: 4.5,  z1: 4,   x2: 7.5,  z2: 7.5, color: 0xbda287 },
-  { id: 'bagno', name: 'Bagno',     sub: '5 m²',  x1: 7.5,  z1: 4,   x2: 11,   z2: 5.5, color: 0x7fa9b8 },
-  { id: 'cuci',  name: 'Bagno 2',   sub: '7 m²',  x1: 7.5,  z1: 5.5, x2: 11,   z2: 7.5, color: 0x96b8c2 },
+  { id: 'sala',  name: 'Sala',      sub: '16 m²', x1: 4.5,  z1: 4,   x2: 9.0,  z2: 7.5, color: 0xbda287 },
+  { id: 'bagno', name: 'Bagno',     sub: '3.5 m²', x1: 9.0,  z1: 4,    x2: 11,   z2: 5.75, color: 0x7fa9b8 },
+  { id: 'cuci',  name: 'Bagno 2',   sub: '3.5 m²', x1: 9.0,  z1: 5.75, x2: 11,   z2: 7.5,  color: 0x96b8c2 },
 ];
 
 const STAIR = null;
@@ -333,20 +333,19 @@ wallZ(4, 4.3, 4.5);
 wallZ(4.3, 5.1, 4.5, doorH, H);
 wallZ(5.1, 7.5, 4.5);
 
-// Wall x=7.5 — Sala con Bagno e Bagno 2: nuova porta Sala→Bagno + porta esistente verso Bagno 2 (anti-bagno)
-wallZ(4, 4.2, 7.5);
-wallZ(4.2, 5.0, 7.5, doorH, H);          // nuova porta Sala → Bagno
-wallZ(5.0, 6.0, 7.5);
-wallZ(6.0, 6.8, 7.5, doorH, H);          // porta Sala → Bagno 2 (anti-bagno)
-wallZ(6.8, 7.5, 7.5);
+// Wall x=7.5 — RIMOSSA: Sala unita agli antibagni (open space verso il muro divisorio x=9.6)
 
-// Wall z=5.5 between Bagno (above) and Cucina (below)
-wallX(7.5, 11, 5.5);
+// Wall z=5.75 — tramezzo fra i due bagni (prolungato da x=9.0 ora che i bagni sono più larghi)
+wallX(9.0, 11, 5.75);
 
-// Parete divisoria interna a Bagno 2: anti-bagno (x=7.5–9.6) + bagno (x=9.6–11)
-wallZ(5.5, 6.0, 9.6);
-wallZ(6.0, 6.8, 9.6, doorH, H);          // porta anti-bagno → bagno (allineata con la porta dalla Sala)
-wallZ(6.8, 7.5, 9.6);
+// Parete divisoria Sala/Bagni a x=9.0 (spostata da 9.6 per ingrandire i bagni)
+wallZ(5.5, 6.0, 9.0);
+wallZ(6.0, 6.8, 9.0, doorH, H);          // porta Sala → Bagno 2
+wallZ(6.8, 7.5, 9.0);
+
+// Prolungamento della stessa parete nel Bagno 1 (z=4–5.5) con porta speculare a quella del Bagno 2
+wallZ(4, 4.7, 9.0);
+wallZ(4.7, 5.5, 9.0, doorH, H);          // porta Sala → Bagno 1 (speculare a Sala → Bagno 2: z=6.0–6.8)
 
 scene.add(wallsGroup);
 
@@ -465,41 +464,95 @@ physioBed(3.40, 6.40, 'z');             // testata su z=7,5, ~70 cm di passaggio
 physioBed(1.05, 6.80, 'x');
 
 // =========================================================================
-// SALA — sedie da sala d'attesa attaccate
-//   Riga 1: contro parete x=4,5 (a sud della porta verso Camera 3)
-//   Riga 2: contro parete z=7,5 (parete della porta di ingresso, a sinistra della porta)
+// SALA — disposizione invertita
+//   Reception: angolo sud-ovest (contro parete x=4.5)
+//   4 sedie da sala d'attesa: angolo nord-est (contro parete z=4)
 // =========================================================================
 
 const chairSeatMat  = new THREE.MeshStandardMaterial({ color: 0x3e4d5e, roughness: 0.85 });
 const chairFrameMat = new THREE.MeshStandardMaterial({ color: 0x222a32, roughness: 0.5, metalness: 0.55 });
 
-// Riga 1 — contro x=4,5
+// =========================================================================
+// RECEPTION — angolo sud-ovest. Scrivania perpendicolare alla parete x=4.5,
+// receptionist contro parete x=4.5 rivolto verso est (la porta di ingresso a x=6.5–7.4, z=7.5)
+// =========================================================================
+
+// Scrivania alta — L 200 cm (asse z) × P 60 cm (asse x) × H 110 cm
+// Attaccata alla parete z=7.5 (lato corto sud incollato al muro). Spigolo NE arrotondato (verso le porte e la sala)
+{
+  const W = 0.60, L = 2.00, H = 1.06, topH = 0.04;
+  const r = 0.30;   // raggio arrotondamento
+  const sh = 0.02;  // sporgenza top sui lati esposti (E, N)
+
+  // Shape pianta — origine (0,0) = angolo SW; lo spigolo NE è (W, L)
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 0);                                  // SW (contro parete sud z=7.5 e parete ovest x=4.5)
+  shape.lineTo(W, 0);                                  // bordo sud (SE, contro parete z=7.5)
+  shape.lineTo(W, L - r);                              // bordo est, fermo prima dello spigolo NE
+  shape.quadraticCurveTo(W, L, W - r, L);              // arco NE (quarto di cerchio)
+  shape.lineTo(0, L);                                  // bordo nord → NW
+  shape.closePath();                                   // ritorno a SW
+
+  const corpoGeom = new THREE.ExtrudeGeometry(shape, { depth: H, bevelEnabled: false });
+  const corpo = new THREE.Mesh(corpoGeom, whiteMat);
+  corpo.rotation.x = -Math.PI / 2;
+  corpo.position.set(5.1, 0, 7.41);                    // angolo SW della scrivania (faccia interna parete z=7.5)
+  corpo.receiveShadow = true;
+  furniture.add(corpo);
+
+  // Top in legno — sporge 2 cm su lati E e N (non a sud/ovest, che sono contro le pareti)
+  const topShape = new THREE.Shape();
+  topShape.moveTo(0, 0);
+  topShape.lineTo(W + sh, 0);
+  topShape.lineTo(W + sh, L + sh - r);
+  topShape.quadraticCurveTo(W + sh, L + sh, W + sh - r, L + sh);
+  topShape.lineTo(0, L + sh);
+  topShape.closePath();
+
+  const topGeom = new THREE.ExtrudeGeometry(topShape, { depth: topH, bevelEnabled: false });
+  const topMesh = new THREE.Mesh(topGeom, woodMat);
+  topMesh.rotation.x = -Math.PI / 2;
+  topMesh.position.set(5.1, H, 7.41);
+  topMesh.receiveShadow = true;
+  furniture.add(topMesh);
+}
+
+// Sgabello alto — fra parete x=4.5 e scrivania, rivolto verso est
+box(4.85, 0.625, 6.41, 0.40, 0.05, 0.40, chairSeatMat);  // seduta (top a y=0.65)
+box(4.85, 0.30,  6.41, 0.08, 0.60, 0.08, chairFrameMat); // palo centrale
+box(4.61, 0.85,  6.41, 0.04, 0.40, 0.40, chairSeatMat);  // schienalino verso la parete x=4.5
+
+// =========================================================================
+// SEDIE SALA D'ATTESA — 4 sedie contro la parete z=4 (angolo nord-est)
+// =========================================================================
 {
   const N = 4;
   const seatW = 0.45, seatGap = 0.05, seatDepth = 0.50;
-  const totalZ = N * seatW + (N-1) * seatGap;          // 1,95 m
-  const startZ = 5.20;                                  // sotto la porta a Camera 3 (z=5,1)
-  const wallFaceX = 4.5 + T/2;                           // 4,59 (faccia interna parete x=4,5)
-  const seatCx = wallFaceX + seatDepth/2;               // 4,84
-  const backX  = wallFaceX + 0.025;
-  box(seatCx, 0.20, startZ + totalZ/2, seatDepth, 0.05, totalZ, chairFrameMat);
-  box(seatCx, 0.10, startZ + 0.04,           seatDepth*0.85, 0.20, 0.05, chairFrameMat);
-  box(seatCx, 0.10, startZ + totalZ - 0.04,  seatDepth*0.85, 0.20, 0.05, chairFrameMat);
+  const totalX = N * seatW + (N-1) * seatGap;          // 1.95 m
+  const startX = 7.0;                                   // ultima sedia ~x=8.95 (vicino angolo NE)
+  const wallFaceZ = 4 + T/2;                            // 4.09 (faccia interna parete z=4 lato sala)
+  const seatCz = wallFaceZ + seatDepth/2;               // 4.34
+  const backZ  = wallFaceZ + 0.025;                     // schienale contro parete
+  box(startX + totalX/2, 0.20, seatCz, totalX, 0.05, seatDepth, chairFrameMat);
+  box(startX + 0.04,           0.10, seatCz, 0.05, 0.20, seatDepth*0.85, chairFrameMat);
+  box(startX + totalX - 0.04,  0.10, seatCz, 0.05, 0.20, seatDepth*0.85, chairFrameMat);
   for (let i = 0; i < N; i++) {
-    const cz = startZ + seatW/2 + i*(seatW + seatGap);
-    box(seatCx, 0.45, cz, seatDepth, 0.05, seatW - 0.02, chairSeatMat);
-    box(backX,  0.72, cz, 0.05, 0.50, seatW - 0.02, chairSeatMat);
+    const cx = startX + seatW/2 + i*(seatW + seatGap);
+    box(cx, 0.45, seatCz, seatW - 0.02, 0.05, seatDepth, chairSeatMat);
+    box(cx, 0.72, backZ, seatW - 0.02, 0.50, 0.05, chairSeatMat);
   }
 }
 
-// Riga 2 — contro z=7,5 (sinistra della porta di ingresso che è a x=6,5–7,4)
+// =========================================================================
+// SEDIE SALA D'ATTESA — 3 sedie contro la parete z=7.5, a destra della porta di ingresso (angolo SE)
+// =========================================================================
 {
-  const N = 4;
+  const N = 3;
   const seatW = 0.45, seatGap = 0.05, seatDepth = 0.50;
-  const totalX = N * seatW + (N-1) * seatGap;          // 1,95 m
-  const startX = 4.525;                                 // (centrato sui 2 m disponibili x=4,5–6,5)
-  const wallFaceZ = 7.5 - T/2;                          // 7,41 (faccia interna parete z=7,5)
-  const seatCz = wallFaceZ - seatDepth/2;               // 7,16
+  const totalX = N * seatW + (N-1) * seatGap;          // 1.45 m
+  const startX = 7.475;                                 // centrato nello spazio x=7.4 → 9.0 (a destra della porta)
+  const wallFaceZ = 7.5 - T/2;                          // 7.41 (faccia interna parete z=7.5)
+  const seatCz = wallFaceZ - seatDepth/2;               // 7.16
   const backZ  = wallFaceZ - 0.025;                     // schienale contro muro
   box(startX + totalX/2, 0.20, seatCz, totalX, 0.05, seatDepth, chairFrameMat);
   box(startX + 0.04,           0.10, seatCz, 0.05, 0.20, seatDepth*0.85, chairFrameMat);
@@ -512,47 +565,39 @@ const chairFrameMat = new THREE.MeshStandardMaterial({ color: 0x222a32, roughnes
 }
 
 // =========================================================================
-// SANITARI BAGNO (WC, lavabo — doccia rimossa)
+// SANITARI BAGNO — speculare al Bagno 2 (asse di simmetria z=5.75)
 // =========================================================================
 
-box(9.275, 0.2, 5.15, 0.4, 0.4, 0.55, ceramicMat);  // WC vaso
-box(9.275, 0.55, 5.35, 0.4, 0.3, 0.15, ceramicMat); // WC cassetta
-box(8.0, 0.45, 5.3, 0.55, 0.85, 0.4, ceramicMat);   // lavabo con mobile
+// WC contro tramezzo z=5.75, lato x=11 (speculare al Bagno 2)
+box(10.7, 0.2, 5.385, 0.4, 0.4, 0.55, ceramicMat);  // WC vaso
+box(10.7, 0.55, 5.585, 0.4, 0.3, 0.15, ceramicMat); // WC cassetta
+
+// Mobile bianco — da parete a parete contro la parete z=4 (speculare al mobile del Bagno 2)
+box(10.0, 0.425, 4.34, 2.0, 0.85, 0.50, whiteMat);
+
+// Piccolo lavabo a parete — contro il tramezzo z=5.75, sinistra del WC (speculare)
+box(10.0, 0.72, 5.51, 0.40, 0.25, 0.30, ceramicMat); // corpo lavabo
+box(10.0, 0.95, 5.63, 0.04, 0.20, 0.04, darkMat);    // rubinetto verticale (contro tramezzo)
+box(10.0, 1.05, 5.56, 0.04, 0.04, 0.12, darkMat);    // beccuccio orizzontale
 
 // =========================================================================
 // SANITARI BAGNO 2 (con anti-bagno: divisorio a x=9,6 → bagno proper x=9,6–11)
 // =========================================================================
 
-box(10.7, 0.2, 5.865, 0.4, 0.4, 0.55, ceramicMat);  // WC vaso
-box(10.7, 0.55, 5.665, 0.4, 0.3, 0.15, ceramicMat); // WC cassetta
-box(10.65, 0.05, 7.05, 0.7, 0.05, 0.9, ceramicMat); // piatto doccia
-const shGlass2 = new THREE.Mesh(
-  new THREE.BoxGeometry(0.05, 1.8, 0.9),
-  new THREE.MeshPhysicalMaterial({
-    color: 0xaaccdd, transparent: true, opacity: 0.25,
-    roughness: 0.05, transmission: 0.7
-  })
-);
-shGlass2.position.set(10.3, 0.95, 7.05);
-furniture.add(shGlass2);
+box(10.7, 0.2, 6.115, 0.4, 0.4, 0.55, ceramicMat);  // WC vaso
+box(10.7, 0.55, 5.915, 0.4, 0.3, 0.15, ceramicMat); // WC cassetta
 
-// Piccolo lavabo a parete nel Bagno 2 (parete top z=5,5, sinistra del WC, vicino al divisorio)
-box(10.0, 0.72, 5.74, 0.40, 0.25, 0.30, ceramicMat); // corpo lavabo
-box(10.0, 0.95, 5.62, 0.04, 0.20, 0.04, darkMat);    // rubinetto verticale (contro parete)
-box(10.0, 1.05, 5.69, 0.04, 0.04, 0.12, darkMat);    // beccuccio orizzontale
+// Mobile bianco — sostituisce la doccia, da parete a parete (x=9.0 → 11), contro parete z=7.5
+box(10.0, 0.425, 7.16, 2.0, 0.85, 0.50, whiteMat);  // mobile L 2 m × P 50 cm × H 85 cm
+
+// Piccolo lavabo a parete nel Bagno 2 (parete top z=5.75, sinistra del WC, vicino al divisorio)
+box(10.0, 0.72, 5.99, 0.40, 0.25, 0.30, ceramicMat); // corpo lavabo
+box(10.0, 0.95, 5.87, 0.04, 0.20, 0.04, darkMat);    // rubinetto verticale (contro parete)
+box(10.0, 1.05, 5.94, 0.04, 0.04, 0.12, darkMat);    // beccuccio orizzontale
 
 // =========================================================================
-// ANTI-BAGNO — macchina del caffè su un mobiletto (parete top z=5,5, centrato)
+// (Macchina del caffè / mobiletto rimossi: erano nell'ex-antibagno, ora unito alla Sala)
 // =========================================================================
-
-const coffeeMat = new THREE.MeshStandardMaterial({ color: 0x202428, roughness: 0.4, metalness: 0.55 });
-
-// Mobiletto base (bianco)
-box(8.5, 0.40, 5.79, 0.50, 0.80, 0.40, whiteMat);    // mobiletto 50x80x40 cm
-// Macchina del caffè sopra il mobiletto (poggiata a y=0.80 → centro y=1.00)
-box(8.5, 1.00, 5.79, 0.30, 0.40, 0.32, coffeeMat);   // corpo macchina
-box(8.5, 0.92, 5.61, 0.16, 0.10, 0.04, ceramicMat);  // beccuccio frontale
-box(8.5, 0.81, 5.61, 0.20, 0.04, 0.06, darkMat);     // griglia portatazze
 
 scene.add(furniture);
 
