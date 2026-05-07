@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Studio medico 3D — 88 mq</title>
+<style>
+  :root {
+    --bg-1: #1a1d24;
+    --bg-2: #0f1115;
+    --ink: #f4efe6;
+    --accent: #d4a574;
+    --muted: rgba(244, 239, 230, 0.55);
+    --panel: rgba(20, 22, 28, 0.78);
+    --border: rgba(212, 165, 116, 0.25);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; font-family: 'Georgia', 'Times New Roman', serif; }
+  body {
+    background: radial-gradient(ellipse at top, var(--bg-1) 0%, var(--bg-2) 100%);
+    color: var(--ink);
+  }
+  #canvas-container { position: fixed; inset: 0; width: 100vw; height: 100vh; }
+  canvas { display: block; }
+
+  .header { position: fixed; top: 24px; left: 24px; z-index: 10; pointer-events: none; }
+  .header .eyebrow {
+    font-family: 'Helvetica', sans-serif; font-size: 10px;
+    letter-spacing: 4px; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 6px;
+  }
+  .header h1 { font-size: 28px; font-weight: 400; letter-spacing: 0.5px; font-style: italic; }
+  .header .sub {
+    font-size: 13px; color: var(--muted); margin-top: 4px;
+    font-family: 'Helvetica', sans-serif; letter-spacing: 1px;
+  }
+
+  .controls {
+    position: fixed; top: 24px; right: 24px; z-index: 10;
+    background: var(--panel); backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 11px 13px; min-width: 165px;
+  }
+  .controls .title {
+    font-family: 'Helvetica', sans-serif; font-size: 8px;
+    letter-spacing: 2.5px; text-transform: uppercase; color: var(--accent);
+    margin-bottom: 9px; padding-bottom: 7px;
+    border-bottom: 1px solid var(--border);
+  }
+  .control-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 7px; font-family: 'Helvetica', sans-serif; font-size: 11px;
+  }
+  .control-row:last-child { margin-bottom: 0; }
+  .control-row label { color: var(--ink); cursor: pointer; user-select: none; }
+  .toggle {
+    position: relative; width: 30px; height: 16px;
+    background: rgba(255,255,255,0.1); border-radius: 9px;
+    cursor: pointer; transition: background 0.25s;
+  }
+  .toggle::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 12px; height: 12px; background: var(--ink);
+    border-radius: 50%; transition: transform 0.25s;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle.on::after { transform: translateX(14px); background: #1a1d24; }
+
+  .btn-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
+    margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border);
+  }
+  .btn {
+    background: transparent; border: 1px solid var(--border); color: var(--ink);
+    font-family: 'Helvetica', sans-serif; font-size: 9px;
+    letter-spacing: 1px; text-transform: uppercase;
+    padding: 6px 4px; cursor: pointer; transition: all 0.2s; border-radius: 2px;
+  }
+  .btn:hover { background: var(--accent); color: #1a1d24; border-color: var(--accent); }
+
+  .legend {
+    position: fixed; bottom: 24px; left: 24px; z-index: 10;
+    background: var(--panel); backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 10px 13px; max-width: 270px;
+  }
+  .legend .title {
+    font-family: 'Helvetica', sans-serif; font-size: 8px;
+    letter-spacing: 2.5px; text-transform: uppercase; color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .legend-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px;
+    font-family: 'Helvetica', sans-serif; font-size: 10px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .legend-item .name { color: var(--ink); }
+  .legend-item .area { color: var(--muted); margin-left: 3px; font-size: 9px; }
+
+  .hint {
+    position: fixed; bottom: 24px; right: 24px; z-index: 10;
+    font-family: 'Helvetica', sans-serif; font-size: 10px;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--muted); text-align: right;
+  }
+  .hint span { color: var(--accent); }
+
+  .room-label {
+    color: #1a1d24; background: rgba(244, 239, 230, 0.92);
+    padding: 3px 10px; border-radius: 2px;
+    font-family: 'Helvetica', sans-serif; font-size: 10px;
+    letter-spacing: 2px; text-transform: uppercase;
+    pointer-events: none; white-space: nowrap;
+    border: 1px solid rgba(0,0,0,0.1); position: absolute;
+  }
+  .room-label .area-label {
+    display: block; font-size: 8px;
+    color: rgba(26, 29, 36, 0.6); margin-top: 2px; letter-spacing: 1px;
+  }
+
+  @media (max-width: 720px) {
+    .header { top: 16px; left: 16px; }
+    .header h1 { font-size: 20px; }
+    .controls { top: 16px; right: 16px; min-width: 180px; padding: 14px; }
+    .legend { bottom: 16px; left: 16px; right: 16px; max-width: none; }
+    .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<div class="header">
+  <div class="eyebrow">Pianta · Vista Assonometrica</div>
+  <h1>Studio medico</h1>
+  <div class="sub">~88 m²</div>
+</div>
+
+<div class="controls">
+  <div class="title">Vista</div>
+  <div class="control-row">
+    <label for="t-roof">Pareti</label>
+    <div id="t-roof" class="toggle on"></div>
+  </div>
+  <div class="control-row">
+    <label for="t-furniture">Arredi</label>
+    <div id="t-furniture" class="toggle on"></div>
+  </div>
+  <div class="control-row">
+    <label for="t-labels">Etichette</label>
+    <div id="t-labels" class="toggle on"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" id="btn-top">Pianta</button>
+    <button class="btn" id="btn-iso">3D</button>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="title">Ambienti</div>
+  <div class="legend-grid">
+    <div class="legend-item"><div class="swatch" style="background:#a8d4a8"></div><span class="name">Stanza 1</span><span class="area">22 m²</span></div>
+    <div class="legend-item"><div class="swatch" style="background:#d4a8c0"></div><span class="name">Stanza 2</span><span class="area">22 m²</span></div>
+    <div class="legend-item"><div class="swatch" style="background:#d4b896"></div><span class="name">Stanza 3</span><span class="area">16 m²</span></div>
+    <div class="legend-item"><div class="swatch" style="background:#bda287"></div><span class="name">Sala</span><span class="area">10 m²</span></div>
+    <div class="legend-item"><div class="swatch" style="background:#7fa9b8"></div><span class="name">Bagno</span><span class="area">5 m²</span></div>
+    <div class="legend-item"><div class="swatch" style="background:#96b8c2"></div><span class="name">Bagno 2</span><span class="area">7 m²</span></div>
+  </div>
+</div>
+
+<div class="hint">trascina · ruota<br><span>scroll</span> · zoom</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ===========================================================================
+// Coordinate system (top-down view of plan):
+//   X: 0 (left) → 11 (right)
+//   Z: 0 (top)  → 7.5 (bottom of main rect); stairwell extends to 9
+//   Y: 0 (floor) → 2.7 (ceiling)
+// ===========================================================================
+
+const W = 11, D = 7.5, H = 2.7, T = 0.18;
+
+const ROOMS = [
+  { id: 'cam1',  name: 'Stanza 1',  sub: '22 m²', x1: 0,    z1: 0,   x2: 5.5,  z2: 4,   color: 0xa8d4a8 },
+  { id: 'cam2',  name: 'Stanza 2',  sub: '22 m²', x1: 5.5,  z1: 0,   x2: 11,   z2: 4,   color: 0xd4a8c0 },
+  { id: 'sogg',  name: 'Stanza 3',  sub: '16 m²', x1: 0,    z1: 4,   x2: 4.5,  z2: 7.5, color: 0xd4b896 },
+  { id: 'sala',  name: 'Sala',      sub: '10 m²', x1: 4.5,  z1: 4,   x2: 7.5,  z2: 7.5, color: 0xbda287 },
+  { id: 'bagno', name: 'Bagno',     sub: '5 m²',  x1: 7.5,  z1: 4,   x2: 11,   z2: 5.5, color: 0x7fa9b8 },
+  { id: 'cuci',  name: 'Bagno 2',   sub: '7 m²',  x1: 7.5,  z1: 5.5, x2: 11,   z2: 7.5, color: 0x96b8c2 },
+];
+
+const STAIR = null;
+
+// =========================================================================
+// SCENE
+// =========================================================================
+
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = null;
+scene.fog = new THREE.Fog(0x0f1115, 25, 60);
+
+const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 200);
+const ISO_POS = { x: 14, y: 14, z: 17 };
+const TOP_POS = { x: W/2, y: 18, z: D/2 + 0.01 };
+camera.position.set(ISO_POS.x, ISO_POS.y, ISO_POS.z);
+camera.lookAt(W/2, 0, D/2);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+// =========================================================================
+// LIGHTS
+// =========================================================================
+
+scene.add(new THREE.AmbientLight(0xfff0d9, 0.45));
+const sun = new THREE.DirectionalLight(0xffe8c4, 1.1);
+sun.position.set(8, 18, 6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -15; sun.shadow.camera.right = 25;
+sun.shadow.camera.top = 20; sun.shadow.camera.bottom = -10;
+sun.shadow.camera.near = 0.1; sun.shadow.camera.far = 50;
+sun.shadow.bias = -0.0005;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x8eb4d4, 0.35);
+fill.position.set(-10, 8, -5);
+scene.add(fill);
+
+// =========================================================================
+// GROUND + FLOORS
+// =========================================================================
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(60, 60),
+  new THREE.MeshStandardMaterial({ color: 0x14171d, roughness: 0.9 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.05;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const floorsGroup = new THREE.Group();
+function addFloor(x1, z1, x2, z2, color) {
+  const w = x2 - x1, d = z2 - z1;
+  const m = new THREE.Mesh(
+    new THREE.BoxGeometry(w, 0.05, d),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.85 })
+  );
+  m.position.set(x1 + w/2, 0.025, z1 + d/2);
+  m.receiveShadow = true;
+  floorsGroup.add(m);
+}
+ROOMS.forEach(r => addFloor(r.x1, r.z1, r.x2, r.z2, r.color));
+scene.add(floorsGroup);
+
+// =========================================================================
+// WALLS
+// =========================================================================
+
+const wallsGroup = new THREE.Group();
+const wallMat       = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.95 }); // bianco neutro (default)
+const wallMatGrey   = new THREE.MeshStandardMaterial({ color: 0xc8cdd2, roughness: 0.95 }); // Camera 1 testiera — grigio chiaro
+const wallMatGreen  = new THREE.MeshStandardMaterial({ color: 0xd2e7c8, roughness: 0.95 }); // Camera 2 testiera — verde pastello chiaro
+const wallMatYellow = new THREE.MeshStandardMaterial({ color: 0xf3e9b8, roughness: 0.95 }); // Camera 3 testiera — giallo pastello chiaro
+
+function wallX(x1, x2, z, hStart = 0, hEnd = H, mat = wallMat) {
+  const len = Math.abs(x2 - x1);
+  if (len < 0.01) return;
+  const height = hEnd - hStart;
+  const m = new THREE.Mesh(new THREE.BoxGeometry(len, height, T), mat);
+  m.position.set((x1+x2)/2, hStart + height/2, z);
+  m.castShadow = false; m.receiveShadow = true;
+  wallsGroup.add(m);
+}
+function wallZ(z1, z2, x, hStart = 0, hEnd = H, mat = wallMat) {
+  const len = Math.abs(z2 - z1);
+  if (len < 0.01) return;
+  const height = hEnd - hStart;
+  const m = new THREE.Mesh(new THREE.BoxGeometry(T, height, len), mat);
+  m.position.set(x, hStart + height/2, (z1+z2)/2);
+  m.castShadow = false; m.receiveShadow = true;
+  wallsGroup.add(m);
+}
+
+const winLow = 1.0, winHigh = 2.0, doorH = 2.1;
+
+// ----- EXTERIOR -----
+// TOP wall — 2 windows
+wallX(0, 1.5, 0);
+wallX(1.5, 2.7, 0, 0, winLow);          wallX(1.5, 2.7, 0, winHigh, H);
+wallX(2.7, 7.3, 0);
+wallX(7.3, 8.7, 0, 0, winLow);          wallX(7.3, 8.7, 0, winHigh, H);
+wallX(8.7, 11, 0);
+// RIGHT — testiera Camera 2 verde pastello (z=0→4), poi tratto bianco verso bagno; finestre bagno e bagno 2
+wallZ(0, 4, 11, 0, H, wallMatGreen);     // Camera 2 — parete testiera (verde pastello chiaro)
+wallZ(4, 4.5, 11);                        // tratto bianco verso il bagno
+wallZ(4.5, 5.2, 11, 0, winLow);          wallZ(4.5, 5.2, 11, winHigh, H);
+wallZ(5.2, 6.1, 11);
+wallZ(6.1, 6.8, 11, 0, winLow);          wallZ(6.1, 6.8, 11, winHigh, H);
+wallZ(6.8, 7.5, 11);
+// BOTTOM — soggiorno window + entrance door near the kitchen wall
+wallX(0, 1.3, 7.5);
+wallX(1.3, 2.0, 7.5, 0, winLow);         wallX(1.3, 2.0, 7.5, winHigh, H);
+wallX(2.0, 6.5, 7.5);
+wallX(6.5, 7.4, 7.5, doorH, H);          // entrance door (90 cm)
+wallX(7.4, 11, 7.5);
+// LEFT — testiera Camera 1 grigio chiaro (z=0→4), testiera Camera 3 giallo pastello chiaro (z=4→7,5)
+wallZ(0, 4, 0, 0, H, wallMatGrey);       // Camera 1 — parete testiera
+wallZ(4, 7.5, 0, 0, H, wallMatYellow);   // Camera 3 — parete testiera
+
+// ----- INTERIOR -----
+// Wall z=4 (top↔bottom). Porte: Sala→Camera 1, Sala→Camera 2 (porta Camera 2→Bagno chiusa)
+wallX(0, 4.6, 4);
+wallX(4.6, 5.4, 4, doorH, H);            // porta Sala → Camera 1
+wallX(5.4, 5.8, 4);
+wallX(5.8, 6.6, 4, doorH, H);            // porta Sala → Camera 2
+wallX(6.6, 11, 4);                        // muro continuo (porta verso Bagno chiusa)
+
+// Wall x=5.5 between Camera 1 and Camera 2
+wallZ(0, 4, 5.5);
+
+// Wall x=4.5 between Camera 3 and Sala (door moved toward Camera 1, z = 4.3–5.1)
+wallZ(4, 4.3, 4.5);
+wallZ(4.3, 5.1, 4.5, doorH, H);
+wallZ(5.1, 7.5, 4.5);
+
+// Wall x=7.5 — Sala con Bagno e Bagno 2: nuova porta Sala→Bagno + porta esistente verso Bagno 2 (anti-bagno)
+wallZ(4, 4.2, 7.5);
+wallZ(4.2, 5.0, 7.5, doorH, H);          // nuova porta Sala → Bagno
+wallZ(5.0, 6.0, 7.5);
+wallZ(6.0, 6.8, 7.5, doorH, H);          // porta Sala → Bagno 2 (anti-bagno)
+wallZ(6.8, 7.5, 7.5);
+
+// Wall z=5.5 between Bagno (above) and Cucina (below)
+wallX(7.5, 11, 5.5);
+
+// Parete divisoria interna a Bagno 2: anti-bagno (x=7.5–9.6) + bagno (x=9.6–11)
+wallZ(5.5, 6.0, 9.6);
+wallZ(6.0, 6.8, 9.6, doorH, H);          // porta anti-bagno → bagno (allineata con la porta dalla Sala)
+wallZ(6.8, 7.5, 9.6);
+
+scene.add(wallsGroup);
+
+// =========================================================================
+// WINDOWS — only the 2 visible on the top wall
+// =========================================================================
+
+const windowMat = new THREE.MeshPhysicalMaterial({
+  color: 0x9bc4d9, transparent: true, opacity: 0.35,
+  roughness: 0.05, transmission: 0.6, side: THREE.DoubleSide
+});
+const windowFrameMat = new THREE.MeshStandardMaterial({
+  color: 0x2c2c2c, roughness: 0.5, metalness: 0.3
+});
+const windowsGroup = new THREE.Group();
+function addWindowX(x1, x2, z) {
+  const w = x2 - x1, h = winHigh - winLow;
+  const pane = new THREE.Mesh(new THREE.BoxGeometry(w, h, T), windowMat);
+  pane.position.set((x1+x2)/2, winLow + h/2, z);
+  windowsGroup.add(pane);
+  const f = 0.04;
+  const top = new THREE.Mesh(new THREE.BoxGeometry(w, f, T+0.04), windowFrameMat);
+  top.position.set((x1+x2)/2, winHigh, z);
+  const bot = top.clone(); bot.position.y = winLow;
+  const mid = new THREE.Mesh(new THREE.BoxGeometry(f, h, T+0.04), windowFrameMat);
+  mid.position.set((x1+x2)/2, winLow + h/2, z);
+  windowsGroup.add(top, bot, mid);
+}
+addWindowX(1.5, 2.7, 0);
+addWindowX(7.3, 8.7, 0);
+addWindowX(1.3, 2.0, 7.5);  // soggiorno window on bottom wall
+
+// Bathroom window on the right wall (x=11, between z=4.5 and z=5.2)
+function addWindowZ(z1, z2, x) {
+  const d = z2 - z1, h = winHigh - winLow;
+  const pane = new THREE.Mesh(new THREE.BoxGeometry(T, h, d), windowMat);
+  pane.position.set(x, winLow + h/2, (z1+z2)/2);
+  windowsGroup.add(pane);
+  const f = 0.04;
+  const top = new THREE.Mesh(new THREE.BoxGeometry(T+0.04, f, d), windowFrameMat);
+  top.position.set(x, winHigh, (z1+z2)/2);
+  const bot = top.clone(); bot.position.y = winLow;
+  const mid = new THREE.Mesh(new THREE.BoxGeometry(T+0.04, h, f), windowFrameMat);
+  mid.position.set(x, winLow + h/2, (z1+z2)/2);
+  windowsGroup.add(top, bot, mid);
+}
+addWindowZ(4.5, 5.2, 11);
+addWindowZ(6.1, 6.8, 11);
+
+scene.add(windowsGroup);
+
+// =========================================================================
+// STAIRS
+// =========================================================================
+
+const stairsGroup = new THREE.Group();
+scene.add(stairsGroup);
+
+// =========================================================================
+// FURNITURE
+// =========================================================================
+
+const furniture = new THREE.Group();
+const woodMat = new THREE.MeshStandardMaterial({ color: 0x6b4423, roughness: 0.7 });
+const fabricMat = new THREE.MeshStandardMaterial({ color: 0x8b7355, roughness: 0.95 });
+const whiteMat = new THREE.MeshStandardMaterial({ color: 0xeeeae0, roughness: 0.5 });
+const darkMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.6 });
+const ceramicMat = new THREE.MeshStandardMaterial({ color: 0xf4f4f0, roughness: 0.3 });
+
+function box(x, y, z, w, h, d, mat) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  m.castShadow = false; m.receiveShadow = true;
+  furniture.add(m);
+  return m;
+}
+
+// =========================================================================
+// LETTINI DA FISIOTERAPISTA
+// 4 in Camera 1, 4 in Camera 2, 3 in Camera 3 — disposti in coppie con corridoio centrale
+// =========================================================================
+
+const padMat       = new THREE.MeshStandardMaterial({ color: 0xece5d6, roughness: 0.9 });
+const bedFrameMat  = new THREE.MeshStandardMaterial({ color: 0x4a5560, roughness: 0.55, metalness: 0.4 });
+
+// Lettino fisioterapista 195x65 cm, altezza top 75 cm.
+// orient='x' → lunghezza lungo X. orient='z' → lunghezza lungo Z. (cx, cz) è il centro.
+function physioBed(cx, cz, orient) {
+  const L = 1.95, W = 0.65;
+  const fH = 0.55, fY = 0.10 + fH/2;          // telaio: y 0.10 → 0.65
+  const pH = 0.10, pY = 0.10 + fH + pH/2;     // imbottitura: y 0.65 → 0.75
+  const wDim = orient === 'x' ? L : W;
+  const dDim = orient === 'x' ? W : L;
+  // Telaio (più stretto del materasso, dà l'effetto a "T rovesciata")
+  box(cx, fY, cz, wDim * 0.92, fH, dDim * 0.85, bedFrameMat);
+  // Materasso/imbottitura
+  box(cx, pY, cz, wDim, pH, dDim, padMat);
+}
+
+// Camera 1 — 4 lettini: due con testa su parete x=0, due con testa su parete x=5,5
+physioBed(1.05, 1.0, 'x');
+physioBed(1.05, 3.0, 'x');
+physioBed(4.45, 1.0, 'x');
+physioBed(4.45, 3.0, 'x');
+
+// Camera 2 — 4 lettini, mirror della Camera 1: testate su x=5,5 e x=11
+physioBed(6.55, 1.0, 'x');
+physioBed(6.55, 3.0, 'x');
+physioBed(9.95, 1.0, 'x');
+physioBed(9.95, 3.0, 'x');
+
+// Camera 3 — 3 lettini: due con testata su parete x=0 (parete accento gialla),
+//            uno con testata sulla parete della finestra z=7,5, vicino alla parete della Sala x=4,5
+physioBed(1.05, 4.70, 'x');
+physioBed(3.40, 6.40, 'z');             // testata su z=7,5, ~70 cm di passaggio dalla parete Sala
+physioBed(1.05, 6.80, 'x');
+
+// =========================================================================
+// SALA — sedie da sala d'attesa attaccate
+//   Riga 1: contro parete x=4,5 (a sud della porta verso Camera 3)
+//   Riga 2: contro parete z=7,5 (parete della porta di ingresso, a sinistra della porta)
+// =========================================================================
+
+const chairSeatMat  = new THREE.MeshStandardMaterial({ color: 0x3e4d5e, roughness: 0.85 });
+const chairFrameMat = new THREE.MeshStandardMaterial({ color: 0x222a32, roughness: 0.5, metalness: 0.55 });
+
+// Riga 1 — contro x=4,5
+{
+  const N = 4;
+  const seatW = 0.45, seatGap = 0.05, seatDepth = 0.50;
+  const totalZ = N * seatW + (N-1) * seatGap;          // 1,95 m
+  const startZ = 5.20;                                  // sotto la porta a Camera 3 (z=5,1)
+  const wallFaceX = 4.5 + T/2;                           // 4,59 (faccia interna parete x=4,5)
+  const seatCx = wallFaceX + seatDepth/2;               // 4,84
+  const backX  = wallFaceX + 0.025;
+  box(seatCx, 0.20, startZ + totalZ/2, seatDepth, 0.05, totalZ, chairFrameMat);
+  box(seatCx, 0.10, startZ + 0.04,           seatDepth*0.85, 0.20, 0.05, chairFrameMat);
+  box(seatCx, 0.10, startZ + totalZ - 0.04,  seatDepth*0.85, 0.20, 0.05, chairFrameMat);
+  for (let i = 0; i < N; i++) {
+    const cz = startZ + seatW/2 + i*(seatW + seatGap);
+    box(seatCx, 0.45, cz, seatDepth, 0.05, seatW - 0.02, chairSeatMat);
+    box(backX,  0.72, cz, 0.05, 0.50, seatW - 0.02, chairSeatMat);
+  }
+}
+
+// Riga 2 — contro z=7,5 (sinistra della porta di ingresso che è a x=6,5–7,4)
+{
+  const N = 4;
+  const seatW = 0.45, seatGap = 0.05, seatDepth = 0.50;
+  const totalX = N * seatW + (N-1) * seatGap;          // 1,95 m
+  const startX = 4.525;                                 // (centrato sui 2 m disponibili x=4,5–6,5)
+  const wallFaceZ = 7.5 - T/2;                          // 7,41 (faccia interna parete z=7,5)
+  const seatCz = wallFaceZ - seatDepth/2;               // 7,16
+  const backZ  = wallFaceZ - 0.025;                     // schienale contro muro
+  box(startX + totalX/2, 0.20, seatCz, totalX, 0.05, seatDepth, chairFrameMat);
+  box(startX + 0.04,           0.10, seatCz, 0.05, 0.20, seatDepth*0.85, chairFrameMat);
+  box(startX + totalX - 0.04,  0.10, seatCz, 0.05, 0.20, seatDepth*0.85, chairFrameMat);
+  for (let i = 0; i < N; i++) {
+    const cx = startX + seatW/2 + i*(seatW + seatGap);
+    box(cx, 0.45, seatCz, seatW - 0.02, 0.05, seatDepth, chairSeatMat);
+    box(cx, 0.72, backZ, seatW - 0.02, 0.50, 0.05, chairSeatMat);
+  }
+}
+
+// =========================================================================
+// SANITARI BAGNO (WC, lavabo — doccia rimossa)
+// =========================================================================
+
+box(9.275, 0.2, 5.15, 0.4, 0.4, 0.55, ceramicMat);  // WC vaso
+box(9.275, 0.55, 5.35, 0.4, 0.3, 0.15, ceramicMat); // WC cassetta
+box(8.0, 0.45, 5.3, 0.55, 0.85, 0.4, ceramicMat);   // lavabo con mobile
+
+// =========================================================================
+// SANITARI BAGNO 2 (con anti-bagno: divisorio a x=9,6 → bagno proper x=9,6–11)
+// =========================================================================
+
+box(10.7, 0.2, 5.865, 0.4, 0.4, 0.55, ceramicMat);  // WC vaso
+box(10.7, 0.55, 5.665, 0.4, 0.3, 0.15, ceramicMat); // WC cassetta
+box(10.65, 0.05, 7.05, 0.7, 0.05, 0.9, ceramicMat); // piatto doccia
+const shGlass2 = new THREE.Mesh(
+  new THREE.BoxGeometry(0.05, 1.8, 0.9),
+  new THREE.MeshPhysicalMaterial({
+    color: 0xaaccdd, transparent: true, opacity: 0.25,
+    roughness: 0.05, transmission: 0.7
+  })
+);
+shGlass2.position.set(10.3, 0.95, 7.05);
+furniture.add(shGlass2);
+
+// Piccolo lavabo a parete nel Bagno 2 (parete top z=5,5, sinistra del WC, vicino al divisorio)
+box(10.0, 0.72, 5.74, 0.40, 0.25, 0.30, ceramicMat); // corpo lavabo
+box(10.0, 0.95, 5.62, 0.04, 0.20, 0.04, darkMat);    // rubinetto verticale (contro parete)
+box(10.0, 1.05, 5.69, 0.04, 0.04, 0.12, darkMat);    // beccuccio orizzontale
+
+// =========================================================================
+// ANTI-BAGNO — macchina del caffè su un mobiletto (parete top z=5,5, centrato)
+// =========================================================================
+
+const coffeeMat = new THREE.MeshStandardMaterial({ color: 0x202428, roughness: 0.4, metalness: 0.55 });
+
+// Mobiletto base (bianco)
+box(8.5, 0.40, 5.79, 0.50, 0.80, 0.40, whiteMat);    // mobiletto 50x80x40 cm
+// Macchina del caffè sopra il mobiletto (poggiata a y=0.80 → centro y=1.00)
+box(8.5, 1.00, 5.79, 0.30, 0.40, 0.32, coffeeMat);   // corpo macchina
+box(8.5, 0.92, 5.61, 0.16, 0.10, 0.04, ceramicMat);  // beccuccio frontale
+box(8.5, 0.81, 5.61, 0.20, 0.04, 0.06, darkMat);     // griglia portatazze
+
+scene.add(furniture);
+
+// =========================================================================
+// LABELS
+// =========================================================================
+
+const labels = [];
+ROOMS.forEach(r => {
+  const div = document.createElement('div');
+  div.className = 'room-label';
+  div.innerHTML = r.name + (r.sub ? `<span class="area-label">${r.sub}</span>` : '');
+  document.body.appendChild(div);
+  labels.push({
+    el: div,
+    pos: new THREE.Vector3((r.x1+r.x2)/2, H + 0.3, (r.z1+r.z2)/2)
+  });
+});
+
+let labelsVisible = true;
+function updateLabels() {
+  if (!labelsVisible) return;
+  labels.forEach(l => {
+    const v = l.pos.clone().project(camera);
+    const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
+    const visible = v.z < 1 && v.z > -1;
+    l.el.style.display = visible ? 'block' : 'none';
+    l.el.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+  });
+}
+
+// =========================================================================
+// ORBIT CONTROLS
+// =========================================================================
+
+const controls = {
+  target: new THREE.Vector3(W/2, 0.5, D/2),
+  spherical: new THREE.Spherical(),
+  azimuth: 0, polar: 0, radius: 0,
+  isDragging: false, lastX: 0, lastY: 0, isPan: false
+};
+function updateSpherical() {
+  const offset = new THREE.Vector3().subVectors(camera.position, controls.target);
+  controls.spherical.setFromVector3(offset);
+  controls.azimuth = controls.spherical.theta;
+  controls.polar = controls.spherical.phi;
+  controls.radius = controls.spherical.radius;
+}
+updateSpherical();
+
+function applyControls() {
+  controls.spherical.theta = controls.azimuth;
+  controls.spherical.phi = Math.max(0.05, Math.min(Math.PI/2 - 0.02, controls.polar));
+  controls.spherical.radius = Math.max(8, Math.min(40, controls.radius));
+  const offset = new THREE.Vector3().setFromSpherical(controls.spherical);
+  camera.position.copy(controls.target).add(offset);
+  camera.lookAt(controls.target);
+}
+
+renderer.domElement.addEventListener('mousedown', e => {
+  controls.isDragging = true;
+  controls.isPan = e.button === 2 || e.shiftKey;
+  controls.lastX = e.clientX; controls.lastY = e.clientY;
+});
+window.addEventListener('mouseup', () => controls.isDragging = false);
+window.addEventListener('mousemove', e => {
+  if (!controls.isDragging) return;
+  const dx = e.clientX - controls.lastX;
+  const dy = e.clientY - controls.lastY;
+  controls.lastX = e.clientX; controls.lastY = e.clientY;
+  if (controls.isPan) {
+    const speed = controls.radius * 0.0015;
+    const right = new THREE.Vector3(); camera.getWorldDirection(right);
+    right.cross(camera.up).normalize();
+    controls.target.addScaledVector(right, -dx * speed);
+    controls.target.addScaledVector(camera.up, dy * speed);
+  } else {
+    controls.azimuth -= dx * 0.005;
+    controls.polar -= dy * 0.005;
+  }
+  applyControls();
+});
+renderer.domElement.addEventListener('wheel', e => {
+  e.preventDefault();
+  controls.radius *= (1 + e.deltaY * 0.001);
+  applyControls();
+}, { passive: false });
+renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+
+let touchStart = null, lastTouchDist = 0;
+renderer.domElement.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) {
+    touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    lastTouchDist = Math.hypot(dx, dy);
+  }
+});
+renderer.domElement.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 1 && touchStart) {
+    const dx = e.touches[0].clientX - touchStart.x;
+    const dy = e.touches[0].clientY - touchStart.y;
+    touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    controls.azimuth -= dx * 0.005;
+    controls.polar -= dy * 0.005;
+    applyControls();
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.hypot(dx, dy);
+    controls.radius *= (1 + (lastTouchDist - dist) * 0.005);
+    lastTouchDist = dist;
+    applyControls();
+  }
+}, { passive: false });
+
+// =========================================================================
+// TOGGLES + VIEWS
+// =========================================================================
+
+function setupToggle(id, onToggle) {
+  const el = document.getElementById(id);
+  el.addEventListener('click', () => {
+    el.classList.toggle('on');
+    onToggle(el.classList.contains('on'));
+  });
+}
+setupToggle('t-roof', on => {
+  wallsGroup.visible = on; windowsGroup.visible = on;
+});
+setupToggle('t-furniture', on => {
+  furniture.visible = on; stairsGroup.visible = on;
+});
+setupToggle('t-labels', on => {
+  labelsVisible = on;
+  labels.forEach(l => l.el.style.display = on ? 'block' : 'none');
+});
+
+function animateCameraTo(targetPos, lookAt, duration = 800) {
+  const startPos = camera.position.clone();
+  const startTarget = controls.target.clone();
+  const endPos = new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z);
+  const endTarget = new THREE.Vector3(lookAt.x, lookAt.y, lookAt.z);
+  const t0 = performance.now();
+  function step() {
+    const t = Math.min(1, (performance.now() - t0) / duration);
+    const e = t < 0.5 ? 2*t*t : -1 + (4-2*t)*t;
+    camera.position.lerpVectors(startPos, endPos, e);
+    controls.target.lerpVectors(startTarget, endTarget, e);
+    camera.lookAt(controls.target);
+    if (t < 1) requestAnimationFrame(step);
+    else updateSpherical();
+  }
+  step();
+}
+document.getElementById('btn-top').addEventListener('click', () => {
+  animateCameraTo(TOP_POS, { x: W/2, y: 0, z: D/2 });
+});
+document.getElementById('btn-iso').addEventListener('click', () => {
+  animateCameraTo(ISO_POS, { x: W/2, y: 0.5, z: D/2 });
+});
+
+// =========================================================================
+// RENDER
+// =========================================================================
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+  updateLabels();
+}
+animate();
+</script>
+</body>
+</html>
