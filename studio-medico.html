@@ -167,7 +167,7 @@
     <div class="legend-item"><div class="swatch" style="background:#d4b896"></div><span class="name">Stanza 3</span><span class="area">16 m²</span></div>
     <div class="legend-item"><div class="swatch" style="background:#bda287"></div><span class="name">Sala</span><span class="area">16 m²</span></div>
     <div class="legend-item"><div class="swatch" style="background:#7fa9b8"></div><span class="name">Bagno</span><span class="area">3.5 m²</span></div>
-    <div class="legend-item"><div class="swatch" style="background:#96b8c2"></div><span class="name">Bagno 2</span><span class="area">3.5 m²</span></div>
+    <div class="legend-item"><div class="swatch" style="background:#96b8c2"></div><span class="name">Cucina</span><span class="area">3.5 m²</span></div>
   </div>
 </div>
 
@@ -190,7 +190,7 @@ const ROOMS = [
   { id: 'sogg',  name: 'Stanza 3',  sub: '16 m²', x1: 0,    z1: 4,   x2: 4.5,  z2: 7.5, color: 0xd4b896 },
   { id: 'sala',  name: 'Sala',      sub: '16 m²', x1: 4.5,  z1: 4,   x2: 9.0,  z2: 7.5, color: 0xbda287 },
   { id: 'bagno', name: 'Bagno',     sub: '3.5 m²', x1: 9.0,  z1: 4,    x2: 11,   z2: 5.75, color: 0x7fa9b8 },
-  { id: 'cuci',  name: 'Bagno 2',   sub: '3.5 m²', x1: 9.0,  z1: 5.75, x2: 11,   z2: 7.5,  color: 0x96b8c2 },
+  { id: 'cuci',  name: 'Cucina',    sub: '3.5 m²', x1: 9.0,  z1: 5.75, x2: 11,   z2: 7.5,  color: 0x96b8c2 },
 ];
 
 const STAIR = null;
@@ -581,19 +581,58 @@ box(10.0, 0.95, 5.63, 0.04, 0.20, 0.04, darkMat);    // rubinetto verticale (con
 box(10.0, 1.05, 5.56, 0.04, 0.04, 0.12, darkMat);    // beccuccio orizzontale
 
 // =========================================================================
-// SANITARI BAGNO 2 (con anti-bagno: divisorio a x=9,6 → bagno proper x=9,6–11)
+// CUCINA (ex Bagno 2): piano cottura sul mobile + lavello esteso all'angolo
 // =========================================================================
 
-box(10.7, 0.2, 6.115, 0.4, 0.4, 0.55, ceramicMat);  // WC vaso
-box(10.7, 0.55, 5.915, 0.4, 0.3, 0.15, ceramicMat); // WC cassetta
+// Mobile bianco — base contro parete z=7.5, da parete a parete (x=9.0 → 11)
+box(10.0, 0.425, 7.16, 2.0, 0.85, 0.50, whiteMat);   // mobile L 2 m × P 50 cm × H 85 cm
 
-// Mobile bianco — sostituisce la doccia, da parete a parete (x=9.0 → 11), contro parete z=7.5
-box(10.0, 0.425, 7.16, 2.0, 0.85, 0.50, whiteMat);  // mobile L 2 m × P 50 cm × H 85 cm
+// Piano cottura a induzione (vetro nero) appoggiato sopra il mobile, centrato
+box(10.0, 0.88,  7.16, 0.60, 0.04, 0.52, darkMat);   // piano induzione 60 × 52 cm
 
-// Piccolo lavabo a parete nel Bagno 2 (parete top z=5.75, sinistra del WC, vicino al divisorio)
-box(10.0, 0.72, 5.99, 0.40, 0.25, 0.30, ceramicMat); // corpo lavabo
-box(10.0, 0.95, 5.87, 0.04, 0.20, 0.04, darkMat);    // rubinetto verticale (contro parete)
-box(10.0, 1.05, 5.94, 0.04, 0.04, 0.12, darkMat);    // beccuccio orizzontale
+// Lavello con piano lavoro lungo parete z=5.75, esteso fino all'angolo dx (dove era il WC)
+// Profondità ridotta a 40 cm; spigolo SW molto smussato (verso la porta d'ingresso)
+{
+  const Wb = 1.80, Lb = 0.40, Hb = 0.85;
+  const rb = 0.40;   // smussatura molto marcata: quarto di cerchio pari alla profondità intera
+  // Origine (0,0) = SW del lavello: world (x=9.2, z=6.15) — spigolo verso la porta
+  const baseShape = new THREE.Shape();
+  baseShape.moveTo(rb, 0);                       // bordo sud, appena ad est dello spigolo
+  baseShape.lineTo(Wb, 0);                       // SE
+  baseShape.lineTo(Wb, Lb);                      // NE (contro parete dx + parete z=5.75)
+  baseShape.lineTo(0, Lb);                       // NW (contro parete z=5.75)
+  baseShape.lineTo(0, rb);                       // bordo ovest, appena a nord dello spigolo
+  baseShape.quadraticCurveTo(0, 0, rb, 0);       // arco SW (smusso molto marcato)
+  baseShape.closePath();
+  const baseGeom = new THREE.ExtrudeGeometry(baseShape, { depth: Hb, bevelEnabled: false });
+  const baseMesh = new THREE.Mesh(baseGeom, whiteMat);
+  baseMesh.rotation.x = -Math.PI / 2;
+  baseMesh.position.set(9.2, 0, 6.15);
+  baseMesh.receiveShadow = true;
+  furniture.add(baseMesh);
+
+  // Piano lavoro (lato sinistro fino alla vasca, x=9.2 → 10.25) — stesso smusso del base
+  const Wt = 1.05;
+  const topShape = new THREE.Shape();
+  topShape.moveTo(rb, 0);
+  topShape.lineTo(Wt, 0);
+  topShape.lineTo(Wt, Lb);
+  topShape.lineTo(0, Lb);
+  topShape.lineTo(0, rb);
+  topShape.quadraticCurveTo(0, 0, rb, 0);
+  topShape.closePath();
+  const topGeom = new THREE.ExtrudeGeometry(topShape, { depth: 0.04, bevelEnabled: false });
+  const topMesh = new THREE.Mesh(topGeom, darkMat);
+  topMesh.rotation.x = -Math.PI / 2;
+  topMesh.position.set(9.2, Hb, 6.15);
+  topMesh.receiveShadow = true;
+  furniture.add(topMesh);
+}
+
+// Vasca lavello (ceramica) — adattata alla nuova profondità del mobile (40 cm)
+box(10.625, 0.87, 5.95, 0.75, 0.04, 0.32, ceramicMat);  // vasca z=5.79–6.11
+box(10.625, 0.95, 5.85, 0.04, 0.20, 0.04, darkMat);     // rubinetto verticale (contro parete)
+box(10.625, 1.05, 5.93, 0.04, 0.04, 0.16, darkMat);     // beccuccio orizzontale
 
 // =========================================================================
 // (Macchina del caffè / mobiletto rimossi: erano nell'ex-antibagno, ora unito alla Sala)
